@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TriAI - Multi-Agent AI Interface</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>TriAI Multi-Agent Interface</h1>
+            <div class="user-info">
+                <span id="current-user">Loading...</span>
+                <div class="status-indicator" id="connection-status">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Connecting...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Agent Selection Panel -->
+            <section class="agent-panel">
+                <h2>Select AI Agent</h2>
+                <div class="agent-selector">
+                    <select id="agent-select" disabled>
+                        <option value="">Loading agents...</option>
+                    </select>
+                    <button id="refresh-agents" class="btn btn-secondary">Refresh</button>
+                </div>
+                <div class="agent-info" id="agent-info">
+                    <h3>Agent Information</h3>
+                    <div class="agent-details">
+                        <p><strong>Description:</strong> <span id="agent-description">Select an agent to view details</span></p>
+                        <p><strong>Model:</strong> <span id="agent-model">-</span></p>
+                        <p><strong>API:</strong> <span id="agent-api">-</span></p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chat Interface -->
+            <section class="chat-section">
+                <div class="chat-header">
+                    <h2>Conversation with <span id="chat-agent-name">Select an Agent</span></h2>
+                    <div class="chat-controls">
+                        <button id="clear-chat" class="btn btn-secondary">Clear Chat</button>
+                        <button id="refresh-messages" class="btn btn-secondary">Refresh</button>
+                    </div>
+                </div>
+
+                <!-- Chat Messages -->
+                <div class="chat-messages" id="chat-messages">
+                    <div class="welcome-message">
+                        <p>👋 Welcome to TriAI! Select an AI agent above to start chatting.</p>
+                        <p>Your AI agents can help with data analysis, database queries, and report generation.</p>
+                    </div>
+                </div>
+
+                <!-- Message Input -->
+                <div class="message-input-container">
+                    <div class="input-group">
+                        <textarea 
+                            id="message-input" 
+                            placeholder="Type your message here... (Press Ctrl+Enter to send)"
+                            rows="3"
+                            disabled
+                        ></textarea>
+                        <button id="send-button" class="btn btn-primary" disabled>
+                            <span class="btn-text">Send</span>
+                            <span class="btn-spinner" style="display: none;">⟳</span>
+                        </button>
+                    </div>
+                    <div class="input-help">
+                        <small>💡 Tip: Ask agents to analyze data, run queries, or generate reports!</small>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results Panel -->
+            <section class="results-section" id="results-section" style="display: none;">
+                <div class="results-header">
+                    <h2>Query Results</h2>
+                    <button id="close-results" class="btn btn-secondary">×</button>
+                </div>
+                <div class="results-content" id="results-content">
+                    <!-- Tabular results will be inserted here -->
+                </div>
+            </section>
+        </main>
+
+        <!-- Agent Memory Panel (collapsible) -->
+        <aside class="memory-panel" id="memory-panel">
+            <div class="memory-header">
+                <h3>Agent Memories</h3>
+                <button id="toggle-memory" class="btn btn-secondary">Show</button>
+            </div>
+            <div class="memory-content" id="memory-content" style="display: none;">
+                <div class="memory-list" id="memory-list">
+                    <p class="no-memories">No memories to display</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>TriAI Multi-Agent Framework | 
+               <a href="/docs" target="_blank">API Docs</a> | 
+               <span id="server-info">Server: Connected</span>
+            </p>
+        </footer>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+# TriAI Configuration File
+database:
+  type: "postgresql"  # Options: postgresql, sqlserver, mock
+  # PostgreSQL configuration
+  postgresql:
+    host: "/var/run/postgresql"
+    port: "5432"
+    database: "triai_main"
+    user: "solifugus"
+    password: ""
+  # SQL Server configuration (alternative)
+  sqlserver:
+    instances:
+      - instance: "localhost\\SQLEXPRESS"
+        user: "triai_user"
+        password: "secure_password"
+    home_db: "TriAI_Main"
+
+models:
+  default:
+    api: "ollama"
+    model: "qwen2.5-coder"
+  
+  openai:
+    api_key: "sk-your-openai-key-here"
+    model: "gpt-4"
+    
+  anthropic:
+    api_key: "sk-ant-your-anthropic-key-here"
+    model: "claude-3-sonnet"
+    
+  microsoft:
+    api_key: "your-copilot-key-here"
+    model: "copilot"
+
+server:
+  host: "0.0.0.0"
+  port: 8080
+  public_folder: "./public"
+  reload: false  # Set to true for development
+  use_mock_db: false  # Set to false to use real database
+  
+fastapi:
+  title: "TriAI Messaging Server"
+  description: "Multi-agent AI framework with database integration"
+  version: "1.0.0"
+  docs_url: "/docs"  # Swagger UI
+  redoc_url: "/redoc"  # ReDoc documentation
+
+user:
+  current_user: "testuser"  # Hardcoded for now
+
+# Agent Server Configuration
+agents:
+  - name: "DataAnalyst"
+    description: "Analyzes data and generates reports using advanced analytics"
+    model_api: "ollama"
+    model: "qwen2.5-coder"
+    polling_interval: 3  # seconds
+    
+  - name: "QueryBot"
+    description: "Executes database queries and explains results in plain language"
+    model_api: "ollama" 
+    model: "qwen2.5-coder"
+    polling_interval: 3
+    
+  - name: "ReportGen"
+    description: "Generates comprehensive business reports from data analysis"
+    model_api: "ollama"
+    model: "qwen2.5-coder"
+    polling_interval: 4
+
+# Ollama Configuration
+ollama:
+  base_url: "http://localhost:11434"
+  timeout: 60
+  
+# Agent Server Settings
+agent_server:
+  messaging_server_url: "ws://localhost:8080"
+  reconnect_attempts: 5
+  reconnect_delay: 5  # seconds
