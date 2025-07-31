@@ -1,6 +1,6 @@
 # TriAI Configuration File
 database:
-  type: "postgresql"  # Options: postgresql, sqlserver, mock
+  type: "mock"  # Options: postgresql, sqlserver, mock
   # PostgreSQL configuration
   postgresql:
     host: "/var/run/postgresql"
@@ -38,7 +38,7 @@ server:
   port: 8080
   public_folder: "./public"
   reload: false  # Set to true for development
-  use_mock_db: false  # Set to false to use real database
+  use_mock_db: true  # Set to false to use real database
   
 fastapi:
   title: "TriAI Messaging Server"
