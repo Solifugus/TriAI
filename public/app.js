@@ -11,6 +11,7 @@ class TriAIClient {
         this.messages = [];
         this.isLoading = false;
         this.messageRefreshInterval = null;
+        this.appConfig = null;
         
         // Initialize the application
         this.init();
@@ -19,6 +20,7 @@ class TriAIClient {
     async init() {
         try {
             this.showLoading(true);
+            await this.loadAppConfig();
             await this.loadCurrentUser();
             await this.loadAgents();
             this.setupEventListeners();
@@ -54,6 +56,43 @@ class TriAIClient {
         } catch (error) {
             console.error(`API call failed for ${endpoint}:`, error);
             throw error;
+        }
+    }
+    
+    async loadAppConfig() {
+        try {
+            this.appConfig = await this.apiCall('/api/config');
+            this.updateAppTitle();
+        } catch (error) {
+            console.error('Failed to load app config:', error);
+            // Use defaults if config loading fails
+            this.appConfig = {
+                application: {
+                    name: "TriAI",
+                    display_name: "TriAI Analytics Platform",
+                    description: "Multi-agent AI framework with database integration"
+                }
+            };
+            this.updateAppTitle();
+        }
+    }
+    
+    updateAppTitle() {
+        const app = this.appConfig.application;
+        document.title = `${app.name} - Multi-Agent AI Interface`;
+        
+        // Update header
+        const headerTitle = document.querySelector('.header h1');
+        if (headerTitle) {
+            headerTitle.textContent = `${app.name} Multi-Agent Interface`;
+        }
+        
+        // Update footer
+        const footer = document.querySelector('.footer p');
+        if (footer) {
+            footer.innerHTML = `${app.display_name} | 
+               <a href="/docs" target="_blank">API Docs</a> | 
+               <span id="server-info">Server: Connected</span>`;
         }
     }
     

@@ -201,6 +201,10 @@ Remember: You are having a conversation with a user. Be conversational and helpf
                     "Posted": data.get("timestamp")
                 }
                 return [message]
+            elif data.get("type") in ["send_response_ack", "mcp_response"]:
+                # These are expected acknowledgments/responses, not errors
+                self.logger.debug(f"Received {data.get('type')} acknowledgment")
+                return []
             else:
                 self.logger.warning(f"Unexpected response to message check: {data}")
                 return []
@@ -242,13 +246,25 @@ Remember: You are having a conversation with a user. Be conversational and helpf
             }
             await self.websocket.send(json.dumps(request))
             
-            response = await asyncio.wait_for(self.websocket.recv(), timeout=10)
-            data = json.loads(response)
+            # Wait for acknowledgment, but handle multiple message types
+            max_attempts = 3
+            for attempt in range(max_attempts):
+                response = await asyncio.wait_for(self.websocket.recv(), timeout=10)
+                data = json.loads(response)
+                
+                if data.get("success") or data.get("type") == "send_response_ack":
+                    self.logger.info(f"Response sent to {to_user}")
+                    return
+                elif data.get("type") in ["messages_response", "mcp_response"]:
+                    # These are normal polling responses, not related to our send_response
+                    self.logger.debug(f"Received unrelated message while waiting for send_response_ack: {data.get('type')}")
+                    continue
+                else:
+                    self.logger.error(f"Failed to send response: {data}")
+                    return
             
-            if data.get("success"):
-                self.logger.info(f"Response sent to {to_user}")
-            else:
-                self.logger.error("Failed to send response")
+            # If we didn't get an ack after max_attempts, assume it worked
+            self.logger.warning(f"No explicit acknowledgment received for response to {to_user}, but assuming success")
                 
         except asyncio.TimeoutError:
             self.logger.error("Failed to send response: Timeout waiting for server acknowledgment")
@@ -333,41 +349,78 @@ Remember: You are having a conversation with a user. Be conversational and helpf
     async def _handle_mcp_tool_usage(self, ai_response: str, user_message: str) -> str:
         """Handle MCP tool usage for data queries."""
         try:
-            # For demo purposes, let's try a simple database query
-            if "query" in user_message.lower() or "data" in user_message.lower():
+            message_lower = user_message.lower()
+            query_executed = False
+            
+            # Credit Union specific queries
+            if any(keyword in message_lower for keyword in ["account", "share", "member", "loan", "transaction"]):
+                sql_query = None
                 
-                # First, get schema information
+                if "share" in message_lower and "account" in message_lower:
+                    sql_query = "SELECT Account_Type, COUNT(*) as Count, AVG(Balance) as Average_Balance FROM Accounts WHERE Account_Type IN ('SAVINGS', 'CHECKING', 'MONEY_MARKET', 'CD') GROUP BY Account_Type"
+                elif "loan" in message_lower and ("type" in message_lower or "kind" in message_lower):
+                    sql_query = "SELECT Loan_Type, COUNT(*) as Count, AVG(Loan_Amount) as Avg_Amount, AVG(Interest_Rate) as Avg_Rate FROM Loans GROUP BY Loan_Type"
+                elif "member" in message_lower and ("account" in message_lower or "info" in message_lower):
+                    sql_query = "SELECT COUNT(*) as Total_Members, AVG(Credit_Score) as Avg_Credit_Score, COUNT(DISTINCT Branch_ID) as Branch_Count FROM Members WHERE Status = 'ACTIVE'"
+                elif "transaction" in message_lower:
+                    sql_query = "SELECT Transaction_Type, COUNT(*) as Count, AVG(ABS(Amount)) as Avg_Amount FROM Transactions WHERE Transaction_Date >= DATEADD(day, -30, GETDATE()) GROUP BY Transaction_Type"
+                
+                if sql_query:
+                    query_result = await self.send_mcp_request("execute_query", {
+                        "database_name": "TriAI_Main", 
+                        "sql_query": sql_query
+                    })
+                    
+                    if query_result.get("success"):
+                        data = query_result.get("data", [])
+                        if data:
+                            query_executed = True
+                            data_summary = self._format_query_results(data)
+                            enhanced_response = f"{ai_response}\n\nBased on our database, here's what I found:\n{data_summary}"
+                            return enhanced_response
+            
+            # General data queries
+            if not query_executed and any(keyword in message_lower for keyword in ["data", "information", "report", "analyze"]):
+                # Get available tables first
                 schema_result = await self.send_mcp_request("get_schema_info", {
                     "database_name": "TriAI_Main"
                 })
                 
                 if schema_result.get("success"):
-                    schema_info = schema_result.get("data", {})
-                    
-                    # Try a sample query based on user request
-                    if "agent" in user_message.lower():
-                        query_result = await self.send_mcp_request("execute_query", {
-                            "database_name": "TriAI_Main",
-                            "sql_query": "SELECT Agent, Description FROM AI_Agents LIMIT 5"
-                        })
-                        
-                        if query_result.get("success"):
-                            query_data = query_result.get("data", {})
-                            results = query_data.get("results", [])
-                            
-                            if results:
-                                response = f"{ai_response}\n\nI found this information in the database:\n\n"
-                                response += "Available Agents:\n"
-                                for row in results:
-                                    response += f"• {row.get('Agent', 'Unknown')}: {row.get('Description', 'No description')}\n"
-                                
-                                return response
+                    # Suggest what data we have available
+                    enhanced_response = f"{ai_response}\n\nI have access to our credit union database with information about:\n- Member accounts (savings, checking, CDs, money market)\n- Loans (auto, personal, mortgage, home equity)\n- Transactions and member activity\n- Branch performance metrics\n\nWhat specific information would you like me to analyze?"
+                    return enhanced_response
                 
             return ai_response
             
         except Exception as e:
             self.logger.error(f"Error handling MCP tools: {e}")
             return f"{ai_response}\n\n(Note: I tried to fetch additional data but encountered an error: {str(e)})"
+    
+    def _format_query_results(self, data: List[Dict[str, Any]]) -> str:
+        """Format query results for display."""
+        if not data:
+            return "No data found."
+        
+        result = ""
+        for i, row in enumerate(data):
+            if i > 0:
+                result += "\n"
+            for key, value in row.items():
+                if isinstance(value, float):
+                    if key.lower().find('balance') >= 0 or key.lower().find('amount') >= 0:
+                        result += f"• {key}: ${value:,.2f}\n"
+                    elif key.lower().find('rate') >= 0:
+                        result += f"• {key}: {value:.2f}%\n" 
+                    else:
+                        result += f"• {key}: {value:.2f}\n"
+                elif isinstance(value, int):
+                    result += f"• {key}: {value:,}\n"
+                else:
+                    result += f"• {key}: {value}\n"
+            result += "\n"
+        
+        return result.strip()
     
     async def get_relevant_memories(self, user_message: str) -> List[Dict[str, Any]]:
         """Retrieve relevant memories based on user message."""
