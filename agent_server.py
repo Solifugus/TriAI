@@ -190,12 +190,28 @@ Remember: You are having a conversation with a user. Be conversational and helpf
             
             if data.get("type") == "messages_response":
                 return data.get("messages", [])
+            elif data.get("type") == "new_message":
+                # Handle real-time message notification
+                self.logger.info(f"Received real-time message from {data.get('from')}: {data.get('message')}")
+                # Convert to message format and return
+                message = {
+                    "User_From": data.get("from"),
+                    "Message": data.get("message"),
+                    "Message_ID": None,  # Will be set when we fetch full message
+                    "Posted": data.get("timestamp")
+                }
+                return [message]
             else:
                 self.logger.warning(f"Unexpected response to message check: {data}")
                 return []
                 
+        except asyncio.TimeoutError:
+            self.logger.error("Failed to check messages: Timeout waiting for server response")
+            return []
         except Exception as e:
-            self.logger.error(f"Failed to check messages: {e}")
+            self.logger.error(f"Failed to check messages: {type(e).__name__}: {e}")
+            import traceback
+            self.logger.debug(traceback.format_exc())
             return []
     
     async def mark_messages_read(self, message_ids: List[int]):
@@ -234,8 +250,12 @@ Remember: You are having a conversation with a user. Be conversational and helpf
             else:
                 self.logger.error("Failed to send response")
                 
+        except asyncio.TimeoutError:
+            self.logger.error("Failed to send response: Timeout waiting for server acknowledgment")
         except Exception as e:
-            self.logger.error(f"Failed to send response: {e}")
+            self.logger.error(f"Failed to send response: {type(e).__name__}: {e}")
+            import traceback
+            self.logger.debug(traceback.format_exc())
     
     async def process_message(self, message: Dict[str, Any]) -> str:
         """Process a user message and generate AI response."""

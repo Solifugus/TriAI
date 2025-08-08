@@ -116,6 +116,17 @@ class TriAIServer:
             """Returns current user identification."""
             return {"username": self.config["user"]["current_user"]}
         
+        @self.app.get("/api/config")
+        async def get_app_config() -> Dict[str, Any]:
+            """Returns application configuration for UI."""
+            return {
+                "application": self.config.get("application", {
+                    "name": "TriAI",
+                    "display_name": "TriAI Analytics Platform",
+                    "description": "Multi-agent AI framework with database integration"
+                })
+            }
+        
         @self.app.get("/api/agents", response_model=List[AgentInfo])
         async def get_agents() -> List[AgentInfo]:
             """Returns available agents with descriptions from AI_Agents table."""
@@ -380,27 +391,29 @@ class TriAIServer:
         # Create a simple index.html if it doesn't exist
         index_path = os.path.join(public_folder, "index.html")
         if not os.path.exists(index_path):
+            app_name = self.config.get("application", {}).get("display_name", "TriAI")
+            app_description = self.config.get("application", {}).get("description", "Multi-agent AI framework")
             with open(index_path, 'w') as f:
-                f.write("""<!DOCTYPE html>
+                f.write(f"""<!DOCTYPE html>
 <html>
 <head>
-    <title>TriAI Messaging Interface</title>
+    <title>{app_name} - Messaging Interface</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f0f8ff; }
-        .container { max-width: 800px; margin: 0 auto; }
-        h1 { color: #2c5aa0; text-align: center; }
-        .status { padding: 10px; background: #e7f3ff; border-radius: 5px; margin-bottom: 20px; }
-        .api-links { background: white; padding: 20px; border-radius: 5px; }
-        .api-links a { display: block; margin: 10px 0; color: #2c5aa0; text-decoration: none; }
-        .api-links a:hover { text-decoration: underline; }
+        body {{ font-family: Arial, sans-serif; margin: 20px; background-color: #f0f8ff; }}
+        .container {{ max-width: 800px; margin: 0 auto; }}
+        h1 {{ color: #2c5aa0; text-align: center; }}
+        .status {{ padding: 10px; background: #e7f3ff; border-radius: 5px; margin-bottom: 20px; }}
+        .api-links {{ background: white; padding: 20px; border-radius: 5px; }}
+        .api-links a {{ display: block; margin: 10px 0; color: #2c5aa0; text-decoration: none; }}
+        .api-links a:hover {{ text-decoration: underline; }}
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>TriAI Messaging Server</h1>
+        <h1>{app_name}</h1>
         <div class="status">
             <h3>Server Status: Running</h3>
-            <p>The TriAI messaging server is operational and ready to accept connections.</p>
+            <p>{app_description} - The messaging server is operational and ready to accept connections.</p>
         </div>
         <div class="api-links">
             <h3>API Documentation</h3>
@@ -423,7 +436,10 @@ class TriAIServer:
             self.app,
             host=self.config["server"]["host"],
             port=self.config["server"]["port"],
-            reload=self.config["server"].get("reload", False)
+            reload=self.config["server"].get("reload", False),
+            ws_ping_interval=20,  # Send ping every 20 seconds
+            ws_ping_timeout=60,   # Wait 60 seconds for pong
+            timeout_keep_alive=65  # Keep connections alive longer
         )
 
 

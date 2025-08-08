@@ -40,6 +40,11 @@ server:
   reload: false  # Set to true for development
   use_mock_db: true  # Set to false to use real database
   
+application:
+  name: "CU-TriAI"  # Application name displayed in UI
+  display_name: "Credit Union Analytics Platform"  # Full display name
+  description: "Multi-agent AI framework for credit union data analysis and insights"
+
 fastapi:
   title: "TriAI Messaging Server"
   description: "Multi-agent AI framework with database integration"
@@ -52,20 +57,26 @@ user:
 
 # Agent Server Configuration
 agents:
-  - name: "DataAnalyst"
-    description: "Analyzes data and generates reports using advanced analytics"
+  - name: "LoanAnalyst"
+    description: "Analyzes loan portfolios, risk assessment, and member lending patterns"
     model_api: "ollama"
     model: "qwen2.5-coder"
     polling_interval: 3  # seconds
     
-  - name: "QueryBot"
-    description: "Executes database queries and explains results in plain language"
+  - name: "MemberServices"
+    description: "Provides insights on member accounts, transactions, and service usage"
     model_api: "ollama" 
     model: "qwen2.5-coder"
     polling_interval: 3
     
-  - name: "ReportGen"
-    description: "Generates comprehensive business reports from data analysis"
+  - name: "ComplianceBot"
+    description: "Monitors regulatory compliance, audit trails, and risk management"
+    model_api: "ollama"
+    model: "qwen2.5-coder"
+    polling_interval: 4
+    
+  - name: "FinancialReporter"
+    description: "Generates financial reports, dashboards, and member analytics"
     model_api: "ollama"
     model: "qwen2.5-coder"
     polling_interval: 4
