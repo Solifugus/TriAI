@@ -1,11 +1,11 @@
 # TriAI Configuration File
 database:
-  type: "mock"  # Options: postgresql, sqlserver, mock
+  type: "postgresql"  # Options: postgresql, sqlserver, mock
   # PostgreSQL configuration
   postgresql:
     host: "/var/run/postgresql"
     port: "5432"
-    database: "triai_main"
+    database: "triai_test"
     user: "solifugus"
     password: ""
   # SQL Server configuration (alternative)
@@ -38,7 +38,7 @@ server:
   port: 8080
   public_folder: "./public"
   reload: false  # Set to true for development
-  use_mock_db: true  # Set to false to use real database
+  use_mock_db: false  # Set to false to use real database
   
 application:
   name: "CU-TriAI"  # Application name displayed in UI

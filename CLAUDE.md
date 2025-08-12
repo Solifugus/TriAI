@@ -20,25 +20,117 @@ TriAI is a multi-agent AI framework consisting of three core components:
 - Agent configuration stored in `AI_Agents` table with model API settings
 
 ### Database Schema
-The framework uses SQL Server 2019 with these key tables:
+The framework supports three data storage options:
+- **Mock Database** - In-memory data structures for testing and development
+- **SQL Server 2019** - Production deployment option
+- **PostgreSQL** - Alternative production deployment option
+
+The same schema is implemented across all three options:
+
+#### SQL Server Schema
 
 ```sql
 -- Agent registration and configuration
-AI_Agents (Agent, Description, Model_API, Model, Model_API_KEY)
+CREATE TABLE dbo.AI_Agents(
+    Agent              VARCHAR(15) UNIQUE NOT NULL,
+    Description        VARCHAR(100),       -- public description
+    Role               VARCHAR(MAX),       -- agent's reference
+    Model_API          VARCHAR(300),
+    Model              VARCHAR(100),
+    Polling_Interval   INT,
+    PRIMARY KEY (Agent)
+)
 
 -- Message storage between users and agents
-AI_Messages (Message_ID, Posted, User_From, User_To, Message, User_Read)
+CREATE TABLE dbo.AI_Messages(
+    Message_ID     INT IDENTITY(1,1),
+    Posted         DATETIME DEFAULT GETDATE(),
+    User_From      VARCHAR(15),
+    User_To        VARCHAR(15),
+    Message        VARCHAR(MAX),
+    User_Read      DATETIME,
+    PRIMARY KEY (Message_ID)
+)
 
 -- Agent memory system for persistent knowledge
-AI_Memories (Memory_ID, Agent, First_Posted, Times_Recalled, Last_Recalled, Memory_Label, Memory, Related_To, Purge_After)
+CREATE TABLE dbo.AI_Memories(
+    Memory_ID      INT IDENTITY(1,1),
+    Agent          VARCHAR(15),
+    First_Posted   DATETIME DEFAULT GETDATE(),
+    Times_Recalled INT DEFAULT 0,
+    Last_Recalled  DATETIME,
+    Memory_label   VARCHAR(100),
+    Memory         VARCHAR(MAX),
+    Related_To     VARCHAR(100),
+    Purge_After    DATETIME,
+    PRIMARY KEY (Memory_ID)
+)
 
--- Query execution tracking
-AI_Query_History (Query_ID, Agent, Database_Name, SQL_Query, Executed_Time, Row_Count, Execution_Time_MS)
+-- Script storage and metadata
+CREATE TABLE dbo.AI_Scripts(
+    Language       VARCHAR(15),
+    Folder         VARCHAR(100),
+    FileName       VARCHAR(100),
+    Summary        VARCHAR(6000),
+    Script         VARCHAR(MAX) NULL
+)
+```
+
+#### PostgreSQL Schema
+
+```sql
+-- Agent registration and configuration
+CREATE TABLE AI_Agents(
+    Agent              VARCHAR(15) UNIQUE NOT NULL,
+    Description        VARCHAR(100),       -- public description
+    Role               TEXT,               -- agent's reference
+    Model_API          VARCHAR(300),
+    Model              VARCHAR(100),
+    Polling_Interval   INTEGER,
+    PRIMARY KEY (Agent)
+);
+
+-- Message storage between users and agents
+CREATE TABLE AI_Messages(
+    Message_ID     SERIAL PRIMARY KEY,
+    Posted         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    User_From      VARCHAR(15),
+    User_To        VARCHAR(15),
+    Message        TEXT,
+    User_Read      TIMESTAMP
+);
+
+-- Agent memory system for persistent knowledge
+CREATE TABLE AI_Memories(
+    Memory_ID      SERIAL PRIMARY KEY,
+    Agent          VARCHAR(15),
+    First_Posted   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    Times_Recalled INTEGER DEFAULT 0,
+    Last_Recalled  TIMESTAMP,
+    Memory_label   VARCHAR(100),
+    Memory         TEXT,
+    Related_To     VARCHAR(100),
+    Purge_After    TIMESTAMP
+);
+
+-- Script storage and metadata
+CREATE TABLE AI_Scripts(
+    Language       VARCHAR(15),
+    Folder         VARCHAR(100),
+    FileName       VARCHAR(100),
+    Summary        VARCHAR(6000),
+    Script         TEXT
+);
 ```
 
 ### DataLink Class
-All database operations must go through the `DataLink` class for:
-- Connection management with retry logic
+All database operations must go through the `DataLink` class which provides a unified interface across all three storage options:
+- **Mock Mode** - Uses in-memory dictionaries and lists for testing
+- **SQL Server** - Uses pyodbc with connection pooling and retry logic  
+- **PostgreSQL** - Uses psycopg2 with connection pooling and retry logic
+
+Core functionality:
+- Database abstraction layer with consistent API
 - SQL injection prevention via `sql_escape()` 
 - Error logging with SQL context
 - Data format conversion between lists/dictionaries
@@ -50,6 +142,8 @@ Key methods:
 - `sql_insert(table_name, data, chunk_size=500)` - Bulk insert operations
 - `sql_upsert(table_name, data, key=[])` - Update or insert operations
 
+Database selection is controlled via `config.yaml` with the `database_type` setting (`mock`, `sqlserver`, or `postgresql`).
+
 ## Development Commands
 
 Since this is a design-phase repository with only documentation files, there are no build, test, or lint commands defined yet. The implementation will use:
@@ -57,7 +151,7 @@ Since this is a design-phase repository with only documentation files, there are
 - **FastAPI** for the messaging server with uvicorn
 - **Python** for agent servers and MCP tools
 - **Vanilla HTML/CSS/JavaScript** for the browser client
-- **SQL Server 2019** for data persistence
+- **Multi-database support** for data persistence (Mock/SQL Server 2019/PostgreSQL)
 
 ## Model Support
 
@@ -92,6 +186,6 @@ Essential tools provided via WebSocket:
 
 - **Independent Agent Operation** - No coordination required between agents
 - **Transactional Messaging** - No session state maintenance
-- **Database-First Architecture** - All data persisted in SQL Server
+- **Database-Agnostic Architecture** - Unified data layer supporting Mock/SQL Server/PostgreSQL
 - **Security Focus** - SELECT-only queries, permission checking, SQL injection prevention  
 - **Performance Considerations** - Connection pooling, query result limits (1000 rows default), chunked operations

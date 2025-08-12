@@ -1,0 +1,60 @@
+# TriAI Production Configuration Template
+# Copy this to config.yaml and update with your settings
+
+database:
+  type: "sqlserver"  # Options: postgresql, sqlserver, mock
+  
+  # SQL Server configuration
+  sqlserver:
+    instances:
+      - instance: "YOUR_SERVER\\YOUR_INSTANCE"  # Update with your SQL Server
+        user: "YOUR_USERNAME"                   # Update with your username
+        password: "YOUR_PASSWORD"               # Update with your password
+    home_db: "TriAI_Main"                      # Update with your database name
+
+server:
+  host: "0.0.0.0"
+  port: 8080
+  public_folder: "./public" 
+  reload: false
+  use_mock_db: false  # IMPORTANT: Set to false for production
+
+application:
+  name: "TriAI"
+  display_name: "TriAI Analytics Platform"
+  description: "Multi-agent AI framework with database integration"
+
+fastapi:
+  title: "TriAI Messaging Server"
+  description: "Multi-agent AI framework with MCP database integration"
+  version: "1.0.0"
+  docs_url: "/docs"
+  redoc_url: "/redoc"
+
+user:
+  current_user: "admin"  # Update with your username
+
+# Agent configuration - these should match your AI_Agents database table
+agents:
+  - name: "DataAnalyst"
+    description: "Analyzes business data and generates reports"
+    model_api: "ollama"
+    model: "qwen2.5-coder"
+    polling_interval: 3
+    
+  - name: "QueryBot"
+    description: "Executes database queries and explains results"
+    model_api: "ollama"
+    model: "qwen2.5-coder"
+    polling_interval: 3
+
+# Ollama Configuration
+ollama:
+  base_url: "http://localhost:11434"  # Update if Ollama is on different server
+  timeout: 60
+
+# Agent Server Settings
+agent_server:
+  messaging_server_url: "ws://localhost:8080"  # Update if needed
+  reconnect_attempts: 5
+  reconnect_delay: 5

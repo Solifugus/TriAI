@@ -1,0 +1,16 @@
+[Unit]
+Description=TriAI Enhanced Agents
+After=network.target triai-messaging.service
+
+[Service]
+Type=simple
+User=triai
+Group=triai
+WorkingDirectory=/opt/triai
+ExecStart=/opt/triai/venv/bin/python enhanced_agent_server.py
+Restart=always
+RestartSec=10
+Environment=PYTHONPATH=/opt/triai
+
+[Install]
+WantedBy=multi-user.target

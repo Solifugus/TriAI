@@ -1,0 +1,16 @@
+[Unit]
+Description=TriAI Messaging Server
+After=network.target
+
+[Service]
+Type=simple
+User=triai
+Group=triai
+WorkingDirectory=/opt/triai
+ExecStart=/opt/triai/venv/bin/python main.py
+Restart=always
+RestartSec=10
+Environment=PYTHONPATH=/opt/triai
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,29 @@
+[Unit]
+Description=TriAI Agent Server
+After=network.target triai-messaging.service
+Requires=triai-messaging.service
+
+[Service]
+Type=simple
+User=solifugus
+Group=solifugus
+WorkingDirectory=/home/solifugus/development/TriAI
+Environment="PATH=/home/solifugus/development/TriAI/venv/bin"
+ExecStart=/home/solifugus/development/TriAI/venv/bin/python start_agents.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=triai-agents
+
+# Health check - ensure the service is responding
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/solifugus/development/TriAI
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,7 @@
+[Unit]
+Description=TriAI Multi-Agent Framework
+After=network.target ollama.service
+Wants=triai-messaging.service triai-agents.service ollama.service
+
+[Install]
+WantedBy=multi-user.target
